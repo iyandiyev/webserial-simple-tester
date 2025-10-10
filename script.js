@@ -108,13 +108,11 @@
   async function onConnectClick() {
     try {
       setStatus("");
-      // If a previously granted port exists, allow opening without a chooser; otherwise request.
-      const existingPorts = await navigator.serial.getPorts();
-      if (existingPorts && existingPorts.length > 0) {
-        port = existingPorts[0];
-      } else {
-        port = await navigator.serial.requestPort({ filters: [] });
+      // Always open chooser so user can select any port
+      if (port) {
+        await disconnect();
       }
+      port = await navigator.serial.requestPort({ filters: [] });
       await openPort();
     } catch (err) {
       setStatus(`Connect failed: ${getErrorMessage(err)}`);
@@ -135,7 +133,11 @@
         await refreshAuthorizedPorts();
         return;
       }
-      port = ports[index];
+      const selected = ports[index];
+      if (port && port !== selected) {
+        await disconnect();
+      }
+      port = selected;
       await openPort();
     } catch (err) {
       setStatus(`Open selected failed: ${getErrorMessage(err)}`);
