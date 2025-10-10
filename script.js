@@ -337,9 +337,34 @@
 
   function getErrorMessage(err) {
     if (!err) return "Unknown error";
-    if (typeof err === "string") return err;
-    if (err.message) return err.message;
-    try { return JSON.stringify(err); } catch (_) { return String(err); }
+    const name = err && err.name ? err.name : "";
+    const message = typeof err === "string" ? err : (err.message || "");
+    let hint = "";
+    switch (name) {
+      case "NotFoundError":
+        hint = "User closed the port chooser.";
+        break;
+      case "NotAllowedError":
+      case "SecurityError":
+        hint = "Permission denied or insecure context.";
+        break;
+      case "InvalidStateError":
+        hint = "Port is already open.";
+        break;
+      case "NetworkError":
+        hint = "Port is busy or in use by another app/host, or driver error.";
+        break;
+      case "AbortError":
+        hint = "Operation was canceled.";
+        break;
+      case "TypeError":
+        hint = "Invalid serial options.";
+        break;
+      default:
+        hint = "";
+    }
+    const base = name ? `${name}: ${message}` : (message || String(err));
+    return hint ? `${base} — ${hint}` : base;
   }
 })();
 
