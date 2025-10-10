@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nuvathings WebSerial Simple Tester</title>
+    <link rel="stylesheet" href="style.min.css">
+  </head>
+  <body>
+    <div class="container">
+      <h1>Nuvathings WebSerial Simple Tester</h1>
+
+      <div class="card" id="supportCard">
+        <div class="row" style="justify-content: space-between; align-items: center;">
+          <div>
+            <strong>Browser support:</strong>
+            <span id="supportStatus" class="badge">Checking…</span>
+          </div>
+          <div>
+            <span id="secureContext" class="badge"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Connection</h2>
+        <div class="row">
+          <label>Baud
+            <select id="baud">
+              <option>9600</option>
+              <option>19200</option>
+              <option>38400</option>
+              <option>57600</option>
+              <option selected>115200</option>
+              <option>230400</option>
+              <option>460800</option>
+              <option>921600</option>
+            </select>
+          </label>
+          <label>Data bits
+            <select id="dataBits">
+              <option>8</option>
+              <option>7</option>
+            </select>
+          </label>
+          <label>Parity
+            <select id="parity">
+              <option value="none" selected>none</option>
+              <option value="even">even</option>
+              <option value="odd">odd</option>
+            </select>
+          </label>
+          <label>Stop bits
+            <select id="stopBits">
+              <option>1</option>
+              <option>2</option>
+            </select>
+          </label>
+          <label>
+            <input type="checkbox" id="rtscts"> RTS/CTS
+          </label>
+        </div>
+
+        <div class="row" style="margin-top: 8px; gap: 8px;">
+          <button id="connectBtn">Connect</button>
+          <button id="disconnectBtn" disabled>Disconnect</button>
+          <span id="portInfo" class="badge">Not connected</span>
+        </div>
+        <div id="statusMsg" class="status" style="margin-top:8px;"></div>
+      </div>
+
+      <div class="card">
+        <h2>Send (Hex)</h2>
+        <textarea id="hexInput" rows="5" spellcheck="false" placeholder="AA BB CC 01 02 03 0x04,0x05…"></textarea>
+        <div class="row" style="margin-top: 8px;">
+          <button id="sendBtn" disabled>Send</button>
+          <span class="hint">Accepts spaces, commas, newlines, and 0x prefixes; sends raw bytes.</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Receive</h2>
+        <div class="row" style="align-items:center;">
+          <label>View
+            <select id="viewMode">
+              <option value="hex" selected>hex</option>
+              <option value="text">text</option>
+            </select>
+          </label>
+          <label>
+            <input type="checkbox" id="autoScroll" checked> Auto-scroll
+          </label>
+          <button id="clearLogBtn">Clear</button>
+        </div>
+        <pre id="receiveLog" aria-live="polite"></pre>
+      </div>
+
+      <div class="card">
+        <h2>Notes</h2>
+        <ul>
+          <li>Use a Chromium-based browser. Web Serial requires a secure context (HTTPS or <code>localhost</code>).</li>
+          <li>Run locally with <code>python -m http.server</code> in this folder, then open <code>http://localhost:8000</code>.</li>
+        </ul>
+      </div>
+    </div>
+
+    <script src="script.js" defer></script>
+  </body>
+  </html>
+
+
