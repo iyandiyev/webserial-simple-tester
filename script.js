@@ -19,6 +19,9 @@
   const clearLogBtn = document.getElementById("clearLogBtn");
   const viewModeEl = document.getElementById("viewMode");
   const autoScrollEl = document.getElementById("autoScroll");
+  const authorizedPortsEl = document.getElementById("authorizedPorts");
+  const refreshPortsBtn = document.getElementById("refreshPortsBtn");
+  const openSelectedBtn = document.getElementById("openSelectedBtn");
 
   /** @type {SerialPort|null} */
   let port = null;
@@ -51,14 +54,28 @@
     renderLog();
   });
   viewModeEl.addEventListener("change", renderLog);
+  refreshPortsBtn.addEventListener("click", refreshAuthorizedPorts);
+  authorizedPortsEl.addEventListener("change", () => {
+    openSelectedBtn.disabled = !authorizedPortsEl.value;
+  });
+  openSelectedBtn.addEventListener("click", onOpenSelectedClick);
 
   // Attempt to reuse previously authorized ports (optional convenience)
   // Not auto-connecting; we still require user gesture for open.
   navigator.serial.getPorts?.().then((ports) => {
     if (ports && ports.length > 0) {
-      setStatus("Previously authorized port available. Click Connect to open.");
+      setStatus("Previously authorized port available. Select and open, or click Connect.");
     }
-  }).catch(() => {/* no-op */});
+    populateAuthorizedPorts(ports || []);
+  }).catch(() => { /* no-op */ });
+
+  // Listen for device plug/unplug events to refresh list
+  if (navigator.serial && typeof navigator.serial.addEventListener === "function") {
+    try {
+      navigator.serial.addEventListener("connect", () => refreshAuthorizedPorts());
+      navigator.serial.addEventListener("disconnect", () => refreshAuthorizedPorts());
+    } catch (_) { /* ignore */ }
+  }
 
   window.addEventListener("beforeunload", () => {
     // Best-effort cleanup
@@ -92,6 +109,27 @@
       await openPort();
     } catch (err) {
       setStatus(`Connect failed: ${getErrorMessage(err)}`);
+    }
+  }
+
+  async function onOpenSelectedClick() {
+    try {
+      setStatus("");
+      const index = parseInt(authorizedPortsEl.value, 10);
+      if (Number.isNaN(index)) {
+        setStatus("Select a port first.");
+        return;
+      }
+      const ports = await navigator.serial.getPorts();
+      if (!ports[index]) {
+        setStatus("Selected port is no longer available.");
+        await refreshAuthorizedPorts();
+        return;
+      }
+      port = ports[index];
+      await openPort();
+    } catch (err) {
+      setStatus(`Open selected failed: ${getErrorMessage(err)}`);
     }
   }
 
@@ -140,6 +178,39 @@
         renderLogTail(value);
       }
     }
+  }
+
+  async function refreshAuthorizedPorts() {
+    try {
+      const ports = await navigator.serial.getPorts();
+      populateAuthorizedPorts(ports || []);
+    } catch (err) {
+      setStatus(`Refresh failed: ${getErrorMessage(err)}`);
+    }
+  }
+
+  function populateAuthorizedPorts(ports) {
+    authorizedPortsEl.innerHTML = "";
+    if (!ports || ports.length === 0) {
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "(none)";
+      authorizedPortsEl.appendChild(opt);
+      openSelectedBtn.disabled = true;
+      return;
+    }
+    ports.forEach((p, idx) => {
+      const opt = document.createElement("option");
+      opt.value = String(idx);
+      // Try to extract some info; USB vendor/product ids may be available
+      const usb = p.getInfo ? p.getInfo() : {};
+      const vid = usb && usb.usbVendorId != null ? usb.usbVendorId.toString(16).padStart(4, "0") : "";
+      const pid = usb && usb.usbProductId != null ? usb.usbProductId.toString(16).padStart(4, "0") : "";
+      const idStr = vid && pid ? ` (VID:PID ${vid}:${pid})` : "";
+      opt.textContent = `Port ${idx + 1}${idStr}`;
+      authorizedPortsEl.appendChild(opt);
+    });
+    openSelectedBtn.disabled = !authorizedPortsEl.value;
   }
 
   async function onSendClick() {
