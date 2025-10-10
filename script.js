@@ -72,8 +72,17 @@
   // Listen for device plug/unplug events to refresh list
   if (navigator.serial && typeof navigator.serial.addEventListener === "function") {
     try {
-      navigator.serial.addEventListener("connect", () => refreshAuthorizedPorts());
-      navigator.serial.addEventListener("disconnect", () => refreshAuthorizedPorts());
+      navigator.serial.addEventListener("connect", (event) => {
+        setStatus("Device connected.");
+        refreshAuthorizedPorts();
+      });
+      navigator.serial.addEventListener("disconnect", async (event) => {
+        if (port && event && event.port === port) {
+          setStatus("Device disconnected.");
+          try { await disconnect(); } catch (_) { /* ignore */ }
+        }
+        refreshAuthorizedPorts();
+      });
     } catch (_) { /* ignore */ }
   }
 
