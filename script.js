@@ -213,15 +213,20 @@
     ports.forEach((p, idx) => {
       const opt = document.createElement("option");
       opt.value = String(idx);
-      // Try to extract some info; USB vendor/product ids may be available
-      const usb = p.getInfo ? p.getInfo() : {};
-      const vid = usb && usb.usbVendorId != null ? usb.usbVendorId.toString(16).padStart(4, "0") : "";
-      const pid = usb && usb.usbProductId != null ? usb.usbProductId.toString(16).padStart(4, "0") : "";
-      const idStr = vid && pid ? ` (VID:PID ${vid}:${pid})` : "";
-      opt.textContent = `Port ${idx + 1}${idStr}`;
+      opt.textContent = formatPortLabel(p, idx);
       authorizedPortsEl.appendChild(opt);
     });
     openSelectedBtn.disabled = !authorizedPortsEl.value;
+  }
+
+  function formatPortLabel(p, idx) {
+    const usb = p && p.getInfo ? p.getInfo() : undefined;
+    const vid = usb && usb.usbVendorId != null ? usb.usbVendorId.toString(16).padStart(4, "0").toUpperCase() : "";
+    const pid = usb && usb.usbProductId != null ? usb.usbProductId.toString(16).padStart(4, "0").toUpperCase() : "";
+    if (vid && pid) {
+      return `Port ${idx + 1} — VID:PID ${vid}:${pid}`;
+    }
+    return `Port ${idx + 1}`;
   }
 
   async function onSendClick() {
@@ -316,7 +321,11 @@
     connectBtn.disabled = isConnected;
     disconnectBtn.disabled = !isConnected;
     sendBtn.disabled = !isConnected;
-    portInfo.textContent = isConnected ? "Connected" : "Not connected";
+    if (isConnected && port) {
+      portInfo.textContent = `Connected — ${formatPortLabel(port, 0)}`;
+    } else {
+      portInfo.textContent = "Not connected";
+    }
     portInfo.style.background = isConnected ? "#14532d" : "#1f2937";
   }
 
